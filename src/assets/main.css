@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at top left, rgba(3, 105, 161, 0.08) 0%, transparent 42%),
+      radial-gradient(ellipse at top right, rgba(51, 65, 85, 0.06) 0%, transparent 38%),
+      #f8fafc;
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+  }
+  .panel-header {
+    @apply border-b border-slate-100 px-4 py-3 text-sm font-semibold tracking-wide text-slate-700;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-400/50 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-secondary-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-secondary-700 disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-rose-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-rose-500 disabled:opacity-50;
+  }
+  .stat-value {
+    @apply font-mono text-2xl font-semibold tabular-nums text-primary-700;
+  }
+  .label-muted {
+    @apply text-xs uppercase tracking-wider text-slate-500;
+  }
+  .input-light {
+    @apply mt-1 w-full rounded-md border-slate-300 bg-white text-sm text-slate-800 shadow-sm focus:border-primary-500 focus:ring-primary-500;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium;
+  }
+  .table-wrap {
+    @apply overflow-x-auto;
+  }
+  .data-table {
+    @apply min-w-full text-sm;
+  }
+  .data-table th {
+    @apply bg-slate-50 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500;
+  }
+  .data-table td {
+    @apply border-t border-slate-100 px-3 py-2.5 text-slate-700;
+  }
+  .data-table tr:hover td {
+    @apply bg-sky-50/60;
+  }
+}

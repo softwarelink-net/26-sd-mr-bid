@@ -1,0 +1,43 @@
+{
+  "name": "26-sd-mr-bid",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "山东第一医科大学附属消化病医院病案无纸化归档系统采购项目原型演示",
+  "scripts": {
+    "dev": "vite",
+    "dev:worker": "wrangler dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "preview:worker": "npm run build && wrangler dev",
+    "lint": "eslint . --fix",
+    "db:migrate": "wrangler d1 execute Allworld --local --file=./schema.sql",
+    "db:seed": "wrangler d1 execute Allworld --local --file=./schema.sql",
+    "db:migrate:remote": "wrangler d1 execute Allworld --remote --file=./schema.sql",
+    "deploy": "npm run build && wrangler deploy && node scripts/deploy-allworld.mjs 26-sd-mr-bid",
+    "deploy:r2": "node scripts/deploy-allworld.mjs 26-sd-mr-bid",
+    "deploy:worker": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "echarts": "^5.6.0",
+    "lucide-vue-next": "^0.511.0",
+    "pinia": "^3.0.3",
+    "vue": "^3.5.18",
+    "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "@vitejs/plugin-vue": "^5.2.4",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.33.0",
+    "eslint-plugin-vue": "^10.4.0",
+    "globals": "^16.3.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "vite": "^5.4.19",
+    "vue-eslint-parser": "^10.2.0",
+    "wrangler": "^4.28.0"
+  }
+}
