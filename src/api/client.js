@@ -102,13 +102,14 @@ http.interceptors.request.use((config) => {
 async function request(path, options = {}) {
   try {
     const res = await http.request({ url: path, method: options.method || 'GET', data: options.body, params: options.params })
+    if (res.data?.success === false) return null
     return res.data
   } catch (err) {
-    if (err.response?.status) {
-      const body = err.response.data || {}
-      throw Object.assign(new Error(body.error || err.response.statusText), { status: err.response.status, body })
-    }
-    return null
+    const status = err.response?.status
+    // 共享 allworld 由其他站点占用时，本站 /api/* 会 404；回退本地演示数据，避免覆盖 Worker
+    if (!status || status === 404 || status >= 500) return null
+    const body = err.response?.data || {}
+    throw Object.assign(new Error(body.error || err.response.statusText), { status, body })
   }
 }
 
@@ -121,8 +122,12 @@ function nowSql() {
 }
 
 export async function login(username, password) {
-  const remote = await request('/api/auth/login', { method: 'POST', body: { username, password } })
-  if (remote?.success) return remote
+  try {
+    const remote = await request('/api/auth/login', { method: 'POST', body: { username, password } })
+    if (remote?.success) return remote
+  } catch {
+    // ignore remote auth errors and use demo accounts
+  }
   const user = DEMO_USERS.find((u) => u.username === username && u.password === password)
   if (!user) return { success: false, error: '账号或密码错误' }
   const { password: _p, ...safe } = user

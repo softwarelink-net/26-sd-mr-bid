@@ -1,10 +1,13 @@
+# 本地开发可用本配置；生产站点由共享 Worker `allworld` 托管。
+# 部署流程：npm run deploy = build + wrangler deploy + R2 同步。
+# Worker 对非本站主机一律从 R2 allworld-sites/{site}/ 读静态资源，避免影响其他子域站点。
+
 name = "allworld"
 main = "worker/index.js"
 compatibility_date = "2026-08-17"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
-# 共享多站点入口：通配子域由 allworld 托管；本站点走同 Worker 内主机分流
 [[routes]]
 pattern = "*.softwarelink.net/*"
 zone_name = "softwarelink.net"
@@ -32,10 +35,9 @@ enabled = true
 head_sampling_rate = 1
 
 [[d1_databases]]
-binding = "DB"
+binding = "Allworld"
 database_name = "Allworld"
 database_id = "502e9e5d-e221-480c-a2a8-20c618fe7688"
-migrations_dir = "migrations"
 
 [[r2_buckets]]
 binding = "STORAGE"
@@ -52,3 +54,4 @@ DEPLOYMENT_HOST = "https://26-sd-mr-bid.softwarelink.net/"
 HOST_DOMAIN = "https://26-sd-mr-bid.softwarelink.net"
 ROOT_DOMAIN = "softwarelink.net"
 JWT_SECRET = "sd-mr-bid-demo-jwt-secret-2026"
+SITE_HOST = "https://26-sd-mr-bid.softwarelink.net/"

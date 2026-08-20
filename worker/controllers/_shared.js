@@ -119,10 +119,15 @@ export const MOCK_USERS = [
   { id: 'u_res', username: 'researcher', real_name: '周研', role: 'RESEARCHER', department: '科研处', badge_no: 'RS017' },
 ]
 
+function db(env) {
+  return env?.Allworld || env?.DB || null
+}
+
 export async function queryAll(env, sql, binds = []) {
-  if (!env?.DB) return null
+  const d1 = db(env)
+  if (!d1) return null
   try {
-    const stmt = env.DB.prepare(sql)
+    const stmt = d1.prepare(sql)
     const res = binds.length ? await stmt.bind(...binds).all() : await stmt.all()
     return res.results || []
   } catch {
@@ -131,9 +136,10 @@ export async function queryAll(env, sql, binds = []) {
 }
 
 export async function queryFirst(env, sql, binds = []) {
-  if (!env?.DB) return null
+  const d1 = db(env)
+  if (!d1) return null
   try {
-    const stmt = env.DB.prepare(sql)
+    const stmt = d1.prepare(sql)
     return binds.length ? await stmt.bind(...binds).first() : await stmt.first()
   } catch {
     return null
@@ -141,9 +147,10 @@ export async function queryFirst(env, sql, binds = []) {
 }
 
 export async function runSql(env, sql, binds = []) {
-  if (!env?.DB) return false
+  const d1 = db(env)
+  if (!d1) return false
   try {
-    const stmt = env.DB.prepare(sql)
+    const stmt = d1.prepare(sql)
     if (binds.length) await stmt.bind(...binds).run()
     else await stmt.run()
     return true

@@ -36,12 +36,13 @@ npm run dev
 npm run build
 ```
 
-### 6. 部署到 Cloudflare Pages
+### 6. 部署到 Cloudflare（共享 Worker allworld）
 ```bash
 npm run deploy
-# 或通过 wrangler 发布
-wrangler deploy
 ```
+该命令会依次执行：前端构建 → `wrangler deploy`（共享 Worker 名称必须为 `allworld`）→ 将静态资源同步到 R2 `26-sd-mr-bid-assets` 与 `allworld-sites/26-sd-mr-bid/`。
+
+Worker 对非本站主机一律从 `allworld-sites/{site}/` 读取静态资源，因此本站部署不会覆盖其他子域站点的页面内容。
 
 ### 7. 常用脚本一览
 - `npm run dev`: 启动本地前端开发服务器

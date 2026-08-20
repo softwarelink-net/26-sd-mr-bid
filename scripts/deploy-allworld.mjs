@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
- * Upload dist/ to:
+ * Upload dist/ into the shared allworld R2 layout:
  *   1) R2 26-sd-mr-bid-assets
  *   2) R2 allworld-sites/26-sd-mr-bid/
+ * Also mirrors docs/assets for sitemap image:image URLs.
  */
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
@@ -67,6 +68,17 @@ for (const file of files) {
   const ct = mime[extname(file).toLowerCase()] || 'application/octet-stream'
   put(projectBucket, rel, file, ct)
   put(sitesBucket, `${siteId}/${rel}`, file, ct)
+}
+
+// Ensure sitemap image assets under docs/ are also available on the static host
+const docsAssets = join(root, 'docs', 'assets')
+if (existsSync(docsAssets)) {
+  for (const file of walk(docsAssets)) {
+    const rel = `docs/assets/${relative(docsAssets, file).replace(/\\/g, '/')}`
+    const ct = mime[extname(file).toLowerCase()] || 'application/octet-stream'
+    put(projectBucket, rel, file, ct)
+    put(sitesBucket, `${siteId}/${rel}`, file, ct)
+  }
 }
 
 console.log(`\nUploaded ${files.length} files`)
