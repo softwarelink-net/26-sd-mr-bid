@@ -1,6 +1,5 @@
-# 本地开发可用本配置；生产站点由共享 Worker `allworld` 托管。
-# 部署流程：npm run deploy = build + wrangler deploy + R2 同步。
-# Worker 对非本站主机一律从 R2 allworld-sites/{site}/ 读静态资源，避免影响其他子域站点。
+# 本地开发 / 参考配置。生产由共享 Worker allworld 托管静态 + R2 SQLite。
+# 本站发布仅同步 R2，禁止 wrangler deploy 覆盖共享 Worker。
 
 name = "allworld"
 main = "worker/index.js"
@@ -8,50 +7,9 @@ compatibility_date = "2026-08-17"
 compatibility_flags = ["nodejs_compat"]
 workers_dev = true
 
-[[routes]]
-pattern = "*.softwarelink.net/*"
-zone_name = "softwarelink.net"
-
-[[routes]]
-pattern = "26-sd-mr-bid.softwarelink.net"
-custom_domain = true
-
-[[routes]]
-pattern = "softwarelink.net"
-custom_domain = true
-
-[[routes]]
-pattern = "www.softwarelink.net"
-custom_domain = true
-
-[assets]
-directory = "./dist"
-binding = "ASSETS"
-not_found_handling = "single-page-application"
-run_worker_first = true
-
-[observability]
-enabled = true
-head_sampling_rate = 1
-
-[[d1_databases]]
-binding = "Allworld"
-database_name = "Allworld"
-database_id = "502e9e5d-e221-480c-a2a8-20c618fe7688"
-
-[[r2_buckets]]
-binding = "STORAGE"
-bucket_name = "26-sd-mr-bid-assets"
-
 [[r2_buckets]]
 binding = "SITES"
 bucket_name = "allworld-sites"
 
 [vars]
-PROJECT_SLUG = "26-sd-mr-bid"
-REPO_NAME = "26-sd-mr-bid"
-DEPLOYMENT_HOST = "https://26-sd-mr-bid.softwarelink.net/"
-HOST_DOMAIN = "https://26-sd-mr-bid.softwarelink.net"
 ROOT_DOMAIN = "softwarelink.net"
-JWT_SECRET = "sd-mr-bid-demo-jwt-secret-2026"
-SITE_HOST = "https://26-sd-mr-bid.softwarelink.net/"

@@ -9,12 +9,30 @@
 
 ---
 
+## 架构说明
+
+**Worker 仅静态 + 浏览器 sql.js + 每站 R2 SQLite**
+
+```
+浏览器 (Vue + sql.js)
+    ↕ GET/PUT /data/site.sqlite
+共享 Worker allworld（静态托管 + SQLite 二进制透传，无 /api 业务接口）
+    ↕
+R2 allworld-sites/26-sd-mr-bid/data/site.sqlite
+```
+
+- 登录、统计、归档、质控、借阅、验签、配置等**全部在浏览器**通过 sql.js 读写 SQLite。
+- 写操作防抖后 `PUT` 回 R2，首访无库时从 `/schema.sql` 种子初始化。
+- **禁止**对本站单独 `wrangler deploy` 覆盖共享 `allworld` Worker；发布仅同步 R2 静态与 SQLite。
+
+---
+
 ## 部署与运行说明
 
 ### 1. 环境要求
 - Node.js >= 18.18.0
 - npm >= 9.0.0
-- Cloudflare Wrangler CLI >= 3.0.0
+- Cloudflare Wrangler CLI >= 3.0.0（R2 上传）
 
 ### 2. 安装依赖
 ```bash
@@ -25,50 +43,71 @@ npm install
 ```bash
 npm run dev
 ```
+本地开发时 `GET /data/site.sqlite` 读取 `public/data/site.sqlite`，`PUT` 由 Vite 中间件写回同一路径。
+
+首次构建前可手动生成 SQLite：
+```bash
+npm run db:build
+cp schema.sql public/schema.sql
+```
 
 ### 4. 演示账号
-- 超级管理员: `admin` / `Admin@2026`
-- 病案质控员: `archivist` / `Archive@2026`
-- 临床医师: `doctor` / `Doctor@2026`
+| 账号 | 密码 | 角色 |
+|------|------|------|
+| `admin` | `Admin@2026` | 超级管理员 |
+| `archivist` | `Archive@2026` | 病案质控员 |
+| `doctor` | `Doctor@2026` | 临床医师 |
+| `auditor` | `Audit@2026` | 审计员 |
+| `researcher` | `Research@2026` | 科研借阅 |
 
 ### 5. 生产构建
 ```bash
 npm run build
 ```
+`prebuild` 会自动执行 `db:build` 并将 `schema.sql` 复制到 `public/`，产物含 `dist/data/site.sqlite`。
 
-### 6. 部署到 Cloudflare（共享 Worker allworld）
+### 6. 部署到 Cloudflare（仅 R2，不覆盖 allworld）
 ```bash
 npm run deploy
 ```
-该命令会依次执行：前端构建 → `wrangler deploy`（共享 Worker 名称必须为 `allworld`）→ 将静态资源同步到 R2 `26-sd-mr-bid-assets` 与 `allworld-sites/26-sd-mr-bid/`。
+该命令会：前端构建 → 将 `dist/` 与 `data/site.sqlite` 同步到 R2 `26-sd-mr-bid-assets` 与 `allworld-sites/26-sd-mr-bid/`。
 
-Worker 对非本站主机一律从 `allworld-sites/{site}/` 读取静态资源，因此本站部署不会覆盖其他子域站点的页面内容。
+共享 Worker `allworld` 按子域从 `allworld-sites/{siteId}/` 提供静态文件，并对 `/data/*.sqlite` 提供 GET/PUT 透传（`worker/index.js` 为参考实现；若线上 PUT 尚未启用，写操作仅在当前浏览器会话内存中生效）。
 
 ### 7. 常用脚本一览
-- `npm run dev`: 启动本地前端开发服务器
-- `npm run build`: 生产环境静态打包
-- `npm run lint`: 代码 ESLint 检查与修复
-- `npm run preview`: 本地预览生产构建制品
+| 脚本 | 说明 |
+|------|------|
+| `npm run dev` | Vite 本地开发 |
+| `npm run db:build` | 从 `schema.sql` 生成 `public/data/site.sqlite` |
+| `npm run build` | 生产静态打包（含 SQLite） |
+| `npm run deploy` | 构建 + R2 上传 |
+| `npm run deploy:r2` | 仅 R2 上传（需已有 `dist/`） |
+| `npm run lint` | ESLint 检查与修复 |
+| `npm run preview` | 预览生产构建 |
 
 ### 8. 目录结构
 ```text
 ├── docs/                     # 架构文档与静态资源
-├── public/                   # 静态资产与 SEO 文件
+├── public/
+│   ├── data/site.sqlite      # 本地/构建用 SQLite（部署同步至 R2）
+│   └── schema.sql            # 浏览器首访种子 SQL
+├── scripts/
+│   ├── build-sqlite.mjs      # schema → site.sqlite
+│   └── deploy-allworld.mjs   # R2 发布
 ├── src/
-│   ├── api/                  # API 请求模块 (Axios/Fetch)
-│   ├── assets/               # 样式与图片资源
-│   ├── components/           # 通用原子与业务组件
-│   │   ├── common/           # 通用组件 (StickyTopBanner 等)
-│   │   ├── dashboard/        # 数据看板组件
-│   │   └── medical/          # 病案查阅与质控组件
-│   ├── layouts/              # 布局系统 (AuthLayout, MainLayout)
-│   ├── router/               # 路由定义与权限守卫
-│   ├── stores/               # Pinia 状态管理
-│   ├── views/                # 页面视图 (归档、质控、借阅、配置)
-│   ├── App.vue               # 根组件 (含全局 Banner 注入)
-│   └── main.js               # 应用入口
-├── schema.sql                # Cloudflare D1 数据库初始化脚本
-├── wrangler.toml             # Cloudflare 配置文件
+│   ├── api/client.js         # 业务门面（调用 db/repository）
+│   ├── db/
+│   │   ├── config.js         # SITE_ID、SQLite 路径
+│   │   ├── engine.js         # sql.js 初始化与 R2 持久化
+│   │   └── repository.js     # 登录与业务 SQL
+│   ├── components/           # 通用与业务组件
+│   ├── layouts/              # AuthLayout、MainLayout
+│   ├── router/               # 路由与权限守卫
+│   ├── stores/               # Pinia 状态
+│   └── views/                # 归档、质控、借阅、配置等页面
+├── schema.sql                # SQLite 表结构与演示种子
+├── worker/index.js           # allworld 参考实现（静态 + SQLite 透传）
+├── wrangler.toml             # 本地 wrangler dev 参考
 └── package.json
 ```
 
@@ -88,7 +127,7 @@ Worker 对非本站主机一律从 `allworld-sites/{site}/` 读取静态资源�
   3. 三级质控工作流（科室质控、病案终审、缺陷驳回闭环）与前置逻辑质控规则引擎。
   4. 动态隐形/显式防泄密安全水印、分级借阅授权与全生命周期审计日志追踪。
 - **技术创新性**：
-  - 基于 Cloudflare Serverless 与 D1 分布式极简架构实现高并发零冷启动归档排队。
+  - 浏览器端 sql.js + R2 持久化 SQLite，Worker 零业务逻辑、多站点静态隔离部署。
   - 智能多级文档渲染管线与动态指纹溯源技术，实现毫秒级病案调阅与司法级验签。
 
 ---
@@ -96,7 +135,7 @@ Worker 对非本站主机一律从 `allworld-sites/{site}/` 读取静态资源�
 ## 免责声明
 
 1. **数据来源与合规性**：本系统展示的所有招标信息、项目背景及采购需求均来源于公开招投标平台（如中国招标投标公共服务平台、中国建设银行龙集采平台等）。系统仅用于技术方案演示、架构原型验证与演示搭建，不涉及任何商业非法抓取或数据篡改。
-2. **技术实现路径**：本系统前端基于 Vue 3 + Tailwind CSS 构建，后端基于 Cloudflare Workers 极简无服务器架构，数据存储采用 Cloudflare D1 关系型数据库，完整符合分布式高可用与银企对接安全标准。
+2. **技术实现路径**：本系统前端基于 Vue 3 + Tailwind CSS + sql.js 构建，数据存储为每站点 R2 上的 SQLite 文件，由共享 Cloudflare Worker `allworld` 提供静态托管与二进制读写透传。
 3. **保密承诺**：开发团队严格遵守保密义务，系统内示例数据均经过伪化脱敏处理（Anonymized），不包含真实患者医疗健康信息（PHI）或建行敏感金融交易数据。
 4. **知识产权与巧合声明**：本系统中涉及的商标、机构名称（中国建设银行、川北医学院附属医院等）归各自合法持有人所有。演示代码与系统架构若与实际投产系统存在相似之处，纯属技术通用设计之巧合。
 5. **免责条款**：本演示系统不具备实际金融扣款功能，不承担因非授权使用、不可抗力或第三方平台接口变更所导致的任何法律责任与经济损失。

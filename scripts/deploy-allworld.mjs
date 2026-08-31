@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /**
- * Upload dist/ into the shared allworld R2 layout:
+ * Upload dist/ + SQLite into shared allworld R2 layout:
  *   1) R2 26-sd-mr-bid-assets
- *   2) R2 allworld-sites/26-sd-mr-bid/
- * Also mirrors docs/assets for sitemap image:image URLs.
+ *   2) R2 allworld-sites/26-sd-mr-bid/  （含 data/site.sqlite）
  */
 import { execSync } from 'node:child_process'
 import { existsSync, readdirSync, statSync } from 'node:fs'
@@ -29,6 +28,9 @@ const mime = {
   '.xml': 'application/xml; charset=utf-8',
   '.ico': 'image/x-icon',
   '.txt': 'text/plain; charset=utf-8',
+  '.sql': 'text/plain; charset=utf-8',
+  '.sqlite': 'application/x-sqlite3',
+  '.wasm': 'application/wasm',
   '.map': 'application/json',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
@@ -68,6 +70,18 @@ for (const file of files) {
   const ct = mime[extname(file).toLowerCase()] || 'application/octet-stream'
   put(projectBucket, rel, file, ct)
   put(sitesBucket, `${siteId}/${rel}`, file, ct)
+}
+
+// 确保 R2 SQLite 与 schema 种子同步（dist 已含 public/data）
+const sqliteFile = join(root, 'public', 'data', 'site.sqlite')
+if (existsSync(sqliteFile)) {
+  put(projectBucket, 'data/site.sqlite', sqliteFile, 'application/x-sqlite3')
+  put(sitesBucket, `${siteId}/data/site.sqlite`, sqliteFile, 'application/x-sqlite3')
+}
+const schemaFile = join(root, 'public', 'schema.sql')
+if (existsSync(schemaFile)) {
+  put(projectBucket, 'schema.sql', schemaFile, 'text/plain; charset=utf-8')
+  put(sitesBucket, `${siteId}/schema.sql`, schemaFile, 'text/plain; charset=utf-8')
 }
 
 // Ensure sitemap image assets under docs/ are also available on the static host

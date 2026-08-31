@@ -7,22 +7,21 @@
   "scripts": {
     "dev": "vite",
     "dev:worker": "wrangler dev",
+    "db:build": "node scripts/build-sqlite.mjs",
+    "prebuild": "node scripts/build-sqlite.mjs && cp schema.sql public/schema.sql",
     "build": "vite build",
     "preview": "vite preview",
     "preview:worker": "npm run build && wrangler dev",
     "lint": "eslint . --fix",
-    "db:migrate": "wrangler d1 execute Allworld --local --file=./schema.sql",
-    "db:seed": "wrangler d1 execute Allworld --local --file=./schema.sql",
-    "db:migrate:remote": "wrangler d1 execute Allworld --remote --file=./schema.sql",
-    "deploy": "npm run build && wrangler deploy && node scripts/deploy-allworld.mjs 26-sd-mr-bid",
+    "deploy": "npm run build && node scripts/deploy-allworld.mjs 26-sd-mr-bid",
     "deploy:r2": "node scripts/deploy-allworld.mjs 26-sd-mr-bid",
-    "deploy:worker": "npm run build && wrangler deploy"
+    "deploy:worker": "node -e \"console.error('禁止 deploy:worker — 共享 allworld 由平台统一维护，本站仅发布 R2 静态与 SQLite'); process.exit(1)\""
   },
   "dependencies": {
-    "axios": "^1.11.0",
     "echarts": "^5.6.0",
     "lucide-vue-next": "^0.511.0",
     "pinia": "^3.0.3",
+    "sql.js": "^1.13.0",
     "vue": "^3.5.18",
     "vue-router": "^4.5.1"
   },
